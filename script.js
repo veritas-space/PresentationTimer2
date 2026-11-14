@@ -484,8 +484,18 @@ function applySettings() {
    ========================================================= */
  
 // 統合パネル全体（表示・操作ボタン・言語バー・設定）を一括して拡大・縮小する
+const ZOOM_SUPPORTED = (typeof CSS !== 'undefined' && CSS.supports && CSS.supports('zoom', '2'));
+
 function applyScale(scale) {
-  $('integratedPanel').style.setProperty('--scale', scale);
+  const panel = $('integratedPanel');
+  const frame = $('panelFrame');
+  panel.style.setProperty('--scale', scale);
+  if (!ZOOM_SUPPORTED && frame) {
+    // zoom 非対応：transform で縮尺し、外枠の大きさを縮尺後の大きさに合わせる
+    frame.classList.add('no-zoom');
+    frame.style.width  = (panel.offsetWidth  * scale) + 'px';
+    frame.style.height = (panel.offsetHeight * scale) + 'px';
+  }
 }
 
 // 初期表示：ウィンドウ幅に収まる倍率（最大1.0）

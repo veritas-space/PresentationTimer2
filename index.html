@@ -4,11 +4,335 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>発表タイマー</title>
-<link rel="stylesheet" href="style.css">
+<!-- スタイルはこのファイルに埋め込み（外部の style.css は使用しない） -->
+<style>
+/* =========================================================
+   発表タイマー style.css（統合パネル版）
+   表示パネル・操作ボタン・言語バー・設定パネルを1枚の統合パネルにまとめ、
+   統合パネル全体を --scale（JSが書き換える）で一括して拡大・縮小する。
+   ========================================================= */
+
+:root {
+  --color-panel-bg:    #000000;
+  --color-pres-normal: #5AFF07;
+  --color-qa-normal:   #FEFF15;
+  --color-disc-normal: #19D3FF;
+  --color-overtime:    #F80201;
+  --color-page-bg:     #1A1A1A;
+  --color-handle:      #AAAAAA;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 32px 24px 64px;
+  background: var(--color-page-bg);
+  color: #FFFFFF;
+  font-family: "Yu Gothic", "YuGothic", "Hiragino Kaku Gothic ProN", "Meiryo", "Noto Sans CJK JP", sans-serif;
+  width: max-content;      /* 拡大して画面幅を超えたら横スクロール */
+  min-width: 100%;
+}
+
+/* =========================================================
+   統合パネル（基準サイズ 1400px 幅。zoom で全体を一括スケール）
+   ========================================================= */
+
+#panelFrame {
+  width: max-content;
+  margin: 0 auto;
+}
+
+#integratedPanel {
+  --scale: 1;
+  zoom: var(--scale);
+  position: relative;
+  width: 1400px;                       /* BASE_PANEL_WIDTH と一致させる */
+  display: flex;
+  background: var(--color-panel-bg);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* ---------- 左：表示エリア ---------- */
+
+#mainArea {
+  flex: 0 0 880px;
+  display: flex;
+  flex-direction: column;
+}
+
+#displayPanel {
+  flex: 1;                             /* 統合パネルの高さの残りを時間表示に使う */
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding-top: 10px;
+}
+
+#timeDisplay {
+  font-weight: bold;
+  font-size: 238px;
+  line-height: 1.0;
+  color: var(--color-pres-normal);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2px;
+  user-select: none;
+}
+
+#modeLabel {
+  font-weight: bold;
+  font-size: 80px;
+  line-height: 1.1;
+  margin-top: 18px;
+  color: var(--color-pres-normal);
+  user-select: none;
+}
+
+#displayPanel.caption-off #modeLabel { display: none; }
+
+/* ---------- 操作ボタン ---------- */
+
+#controlButtons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 22px 12px 22px;
+  background: linear-gradient(#05070C, #0B1220);
+}
+
+.btn {
+  height: 166px;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 12px;
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 36px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 4px 10px rgba(0,0,0,0.5);
+}
+.btn svg { width: 64px; height: 64px; fill: currentColor; }
+.btn-mode svg, .btn-reset svg { fill: none; }
+
+.btn-start { background: linear-gradient(#2FAE5B, #1C7A3C); }
+.btn-stop  { background: linear-gradient(#F0504A, #C42A28); }
+.btn-mode  { background: linear-gradient(#2C86F0, #1559C4); }
+.btn-reset { background: linear-gradient(#6E7484, #4A4F5C); }
+
+.btn:hover  { filter: brightness(1.12); }
+.btn:active { transform: translateY(1px); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none; }
+
+/* ---------- 言語バー ---------- */
+
+#languageSelector {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  background: #0B1220;
+  border-top: 2px solid #1C2A44;
+  font-size: 26px;
+  color: #C9D1DE;
+}
+#languageSelector .globe { width: 34px; height: 34px; color: #C9D1DE; }
+#languageSelector select {
+  font-family: inherit;
+  font-size: 26px;
+  font-weight: bold;
+  color: #FFFFFF;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+#languageSelector select:hover { border-color: #3A4C6E; }
+#languageSelector select option { color: #000; }
+#languageSelector .divider { color: #56627A; margin: 0 10px; }
+.caption-toggle { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; font-weight: bold; }
+.caption-toggle input { width: 30px; height: 30px; accent-color: #2C86F0; cursor: pointer; }
+
+/* ---------- 右：設定エリア ---------- */
+
+#settingsPanel {
+  flex: 0 0 520px;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 26px 20px 30px;
+  border-left: 1px solid #1E2635;
+}
+
+.settings-block { margin-bottom: 26px; }
+
+.block-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.mode-toggle input { width: 30px; height: 30px; accent-color: #FFFFFF; cursor: pointer; }  /* 有効／無効チェックは白 */
+
+.mode-bar { width: 22px; height: 54px; border-radius: 11px; }
+.mode-pres .mode-bar { background: var(--color-pres-normal); }
+.mode-qa   .mode-bar { background: var(--color-qa-normal); }
+.mode-dis  .mode-bar { background: var(--color-disc-normal); }
+
+.mode-name { font-size: 40px; flex: 1; white-space: nowrap; }
+
+/* 「MM:SS」形式の時間入力：キーボード入力と ▲▼（スピンボタン）クリックの両方に対応 */
+.time-field { display: inline-flex; align-items: baseline; }
+.time-field input {
+  width: 1.3em;
+  font-family: inherit;
+  font-size: 46px;
+  color: #FFFFFF;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  text-align: center;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+.time-field .colon { font-size: 46px; }
+.time-field.small input, .time-field.small .colon { font-size: 24px; }
+.time-field input:hover { border-bottom-color: #3A4C6E; }
+.time-field input:focus { outline: none; border-bottom-color: #2C86F0; background: #101828; }
+.time-field input { -moz-appearance: textfield; appearance: textfield; }
+.time-field input::-webkit-outer-spin-button,
+.time-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ▲▼ボタン（マウスを乗せる／入力中に数字の上下へ重ねて表示。配置は崩さない） */
+.spin-wrap { position: relative; display: inline-block; }
+.spin-btn {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1.1em;
+  height: 0.5em;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: #2C86F0;
+  color: #FFFFFF;
+  font-size: inherit;
+  line-height: 0;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.spin-btn svg { width: 0.4em; height: 0.4em; fill: currentColor; }
+.spin-up   { top: -0.42em; }
+.spin-down { bottom: -0.42em; }
+.time-field .spin-wrap { font-size: 46px; }
+.time-field.small .spin-wrap { font-size: 24px; }
+.spin-wrap:hover .spin-btn,
+.spin-wrap:focus-within .spin-btn { opacity: 1; pointer-events: auto; }
+.spin-btn:hover { filter: brightness(1.2); }
+.settings-block.is-disabled .spin-btn { display: none; }
+
+.bell-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 4px 82px;
+  font-size: 24px;
+}
+.bell-row .check { display: inline-flex; align-items: center; gap: 10px; width: 120px; cursor: pointer; }
+.bell-row .check input { width: 22px; height: 22px; cursor: pointer; accent-color: #2C86F0; }
+.bell-row .sep { margin-right: 4px; }
+.bell-row .mae { margin: 0 8px 0 4px; }
+.bell-row select {
+  font-family: inherit;
+  font-size: 16px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  border: 1px solid #99A2B2;
+  background: #FFFFFF;
+  color: #1A1A2E;
+}
+
+/* 無効モードの設定ブロック：ブロック全体をグレーアウト（チェックボックスのみ操作可能） */
+.settings-block.is-disabled { color: #6B6B6B; }
+.settings-block.is-disabled .mode-bar { background: #555555; }
+.settings-block.is-disabled .mode-name,
+.settings-block.is-disabled .time-field,
+.settings-block.is-disabled .time-field input,
+.settings-block.is-disabled .bell-row { color: #6B6B6B; opacity: 0.6; }
+.settings-block.is-disabled .bell-row select { background: #9A9A9A; }
+
+#applyRow {
+  margin-top: auto;
+  min-height: 66px;                    /* エラー文（最大3行）が出てもパネルの高さを変えない */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+#settingsError {
+  flex: 1;
+  margin: 0;
+  color: #FF6B5E;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1.3;
+}
+#btnApplySettings {
+  font-family: inherit;
+  font-size: 28px;
+  padding: 12px 28px;
+  color: #FFFFFF;
+  background: #1F6E8C;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+#btnApplySettings:hover { filter: brightness(1.15); }
+
+/* ---------- リサイズハンドル（統合パネルの右下角） ---------- */
+
+#resizeHandle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  height: 28px;
+  cursor: nwse-resize;
+  touch-action: none;
+  background:
+    linear-gradient(315deg, transparent 0 6px,  var(--color-handle) 6px 8px,  transparent 8px 100%),
+    linear-gradient(315deg, transparent 0 12px, var(--color-handle) 12px 14px, transparent 14px 100%),
+    linear-gradient(315deg, transparent 0 18px, var(--color-handle) 18px 20px, transparent 20px 100%);
+}
+
+button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid #7FB2E5;
+  outline-offset: 2px;
+}
+
+/* zoom 非対応ブラウザ用：transform で統合パネル全体を拡大・縮小（JS が .no-zoom を付ける） */
+#panelFrame.no-zoom { position: relative; overflow: hidden; }
+#panelFrame.no-zoom #integratedPanel { zoom: 1; transform: scale(var(--scale)); transform-origin: 0 0; }
+
+</style>
 </head>
 <body>
 
 <!-- ===== 統合パネル（表示・操作ボタン・設定を一体化。全体がリサイズ対象） ===== -->
+<div id="panelFrame">
 <div id="integratedPanel">
 
   <!-- ===== 左：表示エリア ===== -->
@@ -21,21 +345,21 @@
 
     <div id="controlButtons">
       <button type="button" id="btnStart" class="btn btn-start">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg><span>開始</span>
+        <svg width="64" height="64" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12.5-7.5z"/></svg><span>開始</span>
       </button>
       <button type="button" id="btnStop" class="btn btn-stop">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></svg><span>停止</span>
+        <svg width="64" height="64" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></svg><span>停止</span>
       </button>
       <button type="button" id="btnMode" class="btn btn-mode">
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h14l-4-4"/><path d="M20 15H6l4 4"/></svg><span>モード</span>
+        <svg width="64" height="64" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h14l-4-4"/><path d="M20 15H6l4 4"/></svg><span>モード</span>
       </button>
       <button type="button" id="btnReset" class="btn btn-reset">
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg><span>リセット</span>
+        <svg width="64" height="64" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg><span>リセット</span>
       </button>
     </div>
 
     <div id="languageSelector">
-      <svg class="globe" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18M5 7.5h14M5 16.5h14"/></svg>
+      <svg class="globe" width="34" height="34" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18M5 7.5h14M5 16.5h14"/></svg>
       <label for="langSelect">Language:</label>
       <select id="langSelect">
         <option value="ja" selected>日本語</option>
@@ -136,7 +460,8 @@
 
   <div id="resizeHandle" title="ドラッグして統合パネルの大きさを変更"></div>
 </div><!-- /#integratedPanel -->
+</div><!-- /#panelFrame -->
 
-<script src="script.js"></script>
+<script src="script.js?v=3.0"></script>
 </body>
 </html>
