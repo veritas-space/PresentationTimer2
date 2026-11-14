@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>発表タイマー</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="layout">
+
+  <!-- ===== 左カラム：タイマー表示・言語選択・操作ボタン ===== -->
+  <div id="mainColumn">
+
+  <!-- ===== 表示パネル（リサイズ対象：黒背景の領域） ===== -->
+  <div id="displayPanel">
+    <div id="timeDisplay">10:00</div>
+    <div id="modeLabel">発表</div>
+    <div id="resizeHandle" title="ドラッグして表示の大きさを変更"></div>
+  </div>
+
+  <!-- ===== 言語選択（表示パネルの外側・固定サイズ） ===== -->
+  <div id="languageSelector">
+    <label for="langSelect">言語 / Language / 语言：</label>
+    <select id="langSelect">
+      <option value="ja" selected>日本語</option>
+      <option value="en">English</option>
+      <option value="zh">中文</option>
+    </select>
+    <label class="caption-toggle">
+      <input type="checkbox" id="captionShow" checked><span>モード名を表示</span>
+    </label>
+  </div>
+
+  <!-- ===== 操作ボタン群（表示パネルの外側・固定サイズ） ===== -->
+  <div id="controlButtons">
+    <button type="button" id="btnStart" class="btn btn-start">開始</button>
+    <button type="button" id="btnStop"  class="btn btn-stop">停止</button>
+    <button type="button" id="btnMode"  class="btn btn-mode">モード</button>
+    <button type="button" id="btnReset" class="btn btn-reset">リセット</button>
+  </div>
+
+  </div><!-- /#mainColumn -->
+
+  <!-- ===== 右カラム：設定パネル（固定サイズ） ===== -->
+  <div id="settingsPanel">
+
+    <!-- 発表時間設定ブロック -->
+    <section id="presentationSettings" class="settings-block">
+      <h2 class="settings-heading"><span>発表時間設定</span><label class="mode-toggle"><input type="checkbox" id="presModeEnabled" checked><span>使用する</span></label></h2>
+
+      <div class="settings-row">
+        <span class="row-label">発表時間：</span>
+        <input type="number" id="presMin" min="0" max="99" step="1" value="12"><span class="unit">分</span>
+        <input type="number" id="presSec" min="0" max="59" step="1" value="0"><span class="unit">秒</span>
+        <label class="check"><input type="checkbox" id="presEndEnabled"><span>終鈴：</span></label>
+        <select id="presEndBell">
+          <option value="1">1鈴</option>
+          <option value="2">2鈴</option>
+          <option value="3" selected>3鈴</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <label class="check"><input type="checkbox" id="presPre1Enabled"><span>予鈴1：終了</span></label>
+        <input type="number" id="presPre1Min" min="0" max="99" step="1" value="1"><span class="unit">分</span>
+        <input type="number" id="presPre1Sec" min="0" max="59" step="1" value="0"><span class="unit">秒前</span>
+        <select id="presPre1Bell">
+          <option value="1" selected>1鈴</option>
+          <option value="2">2鈴</option>
+          <option value="3">3鈴</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <label class="check"><input type="checkbox" id="presPre2Enabled"><span>予鈴2：終了</span></label>
+        <input type="number" id="presPre2Min" min="0" max="99" step="1" value="0"><span class="unit">分</span>
+        <input type="number" id="presPre2Sec" min="0" max="59" step="1" value="30"><span class="unit">秒前</span>
+        <select id="presPre2Bell">
+          <option value="1">1鈴</option>
+          <option value="2" selected>2鈴</option>
+          <option value="3">3鈴</option>
+        </select>
+      </div>
+
+    </section>
+
+    <!-- 質疑応答時間設定ブロック -->
+    <section id="qaSettings" class="settings-block">
+      <h2 class="settings-heading"><span>質疑応答時間設定</span><label class="mode-toggle"><input type="checkbox" id="qaModeEnabled" checked><span>使用する</span></label></h2>
+
+      <div class="settings-row">
+        <span class="row-label">質疑応答時間：</span>
+        <input type="number" id="qaMin" min="0" max="99" step="1" value="8"><span class="unit">分</span>
+        <input type="number" id="qaSec" min="0" max="59" step="1" value="0"><span class="unit">秒</span>
+        <label class="check"><input type="checkbox" id="qaEndEnabled"><span>終鈴：</span></label>
+        <select id="qaEndBell">
+          <option value="1">1鈴</option>
+          <option value="2">2鈴</option>
+          <option value="3" selected>3鈴</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <label class="check"><input type="checkbox" id="qaPre1Enabled"><span>予鈴1：終了</span></label>
+        <input type="number" id="qaPre1Min" min="0" max="99" step="1" value="1"><span class="unit">分</span>
+        <input type="number" id="qaPre1Sec" min="0" max="59" step="1" value="0"><span class="unit">秒前</span>
+        <select id="qaPre1Bell">
+          <option value="1" selected>1鈴</option>
+          <option value="2">2鈴</option>
+          <option value="3">3鈴</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <label class="check"><input type="checkbox" id="qaPre2Enabled"><span>予鈴2：終了</span></label>
+        <input type="number" id="qaPre2Min" min="0" max="99" step="1" value="0"><span class="unit">分</span>
+        <input type="number" id="qaPre2Sec" min="0" max="59" step="1" value="30"><span class="unit">秒前</span>
+        <select id="qaPre2Bell">
+          <option value="1">1鈴</option>
+          <option value="2" selected>2鈴</option>
+          <option value="3">3鈴</option>
+        </select>
+      </div>
+
+    </section>
+
+    <!-- 内部討議時間設定ブロック -->
+    <section id="disSettings" class="settings-block">
+      <h2 class="settings-heading"><span>内部討議時間設定</span><label class="mode-toggle"><input type="checkbox" id="disModeEnabled" checked><span>使用する</span></label></h2>
+
+      <div class="settings-row">
+        <span class="row-label">内部討議時間：</span>
+        <input type="number" id="disMin" min="0" max="99" step="1" value="8"><span class="unit">分</span>
+        <input type="number" id="disSec" min="0" max="59" step="1" value="0"><span class="unit">秒</span>
+        <label class="check"><input type="checkbox" id="disEndEnabled"><span>終鈴：</span></label>
+        <select id="disEndBell">
+          <option value="1">1鈴</option>
+          <option value="2">2鈴</option>
+          <option value="3" selected>3鈴</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <label class="check"><input type="checkbox" id="disPre1Enabled"><span>予鈴1：終了</span></label>
+        <input type="number" id="disPre1Min" min="0" max="99" step="1" value="1"><span class="unit">分</span>
+        <input type="number" id="disPre1Sec" min="0" max="59" step="1" value="0"><span class="unit">秒前</span>
+        <select id="disPre1Bell">
+          <option value="1" selected>1鈴</option>
+          <option value="2">2鈴</option>
+          <option value="3">3鈴</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <label class="check"><input type="checkbox" id="disPre2Enabled"><span>予鈴2：終了</span></label>
+        <input type="number" id="disPre2Min" min="0" max="99" step="1" value="0"><span class="unit">分</span>
+        <input type="number" id="disPre2Sec" min="0" max="59" step="1" value="30"><span class="unit">秒前</span>
+        <select id="disPre2Bell">
+          <option value="1">1鈴</option>
+          <option value="2" selected>2鈴</option>
+          <option value="3">3鈴</option>
+        </select>
+      </div>
+
+    </section>
+
+
+    <!-- エラー表示領域 -->
+    <p id="settingsError" role="alert"></p>
+
+    <!-- 設定反映ボタン -->
+    <button type="button" id="btnApplySettings">設定反映</button>
+  </div>
+
+  </div><!-- /#layout -->
+
+<script src="script.js"></script>
+</body>
+</html>
