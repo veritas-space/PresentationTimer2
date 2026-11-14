@@ -22,6 +22,8 @@
 body {
   margin: 0;
   padding: 32px 24px 64px;
+  width: max-content;                        /* 横スクロール時も右端の余白を確保 */
+  min-width: 100%;
   background: var(--color-page-bg);
   color: #E8E8E8;
   font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
@@ -30,21 +32,21 @@ body {
 /* =========================================================
    2カラムレイアウト
    左：タイマー表示・言語選択・操作ボタン / 右：設定パネル
-   幅が足りない場合（スマホ・大きく拡大時）は設定パネルが下へ折り返す
+   表示パネルの大きさやウィンドウ幅に関わらず、設定パネルは常に右側に置く
+   （折り返さない。幅が足りない場合はページ全体を横スクロールする）
    ========================================================= */
 
 #layout {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;                         /* 設定パネルを下へ折り返さない */
   align-items: stretch;                      /* 設定パネルの下端を操作ボタンの下端に揃える */
-  justify-content: center;
   gap: 32px;
+  width: max-content;                        /* 中身の幅を確保（はみ出す分は横スクロール） */
+  margin: 0 auto;                            /* 収まる場合は中央寄せ */
 }
 
 #mainColumn {
-  flex: 0 0 auto;                            /* 幅は表示パネル（拡大縮小）に従う */
-  max-width: 100%;
-  overflow-x: auto;
+  flex: 0 0 auto;                            /* 幅は表示パネル（拡大縮小）に従い、縮めない */
   display: flex;
   flex-direction: column;
 }
@@ -173,9 +175,8 @@ body {
    ========================================================= */
 
 #settingsPanel {
-  flex: 1 1 500px;
-  min-width: 480px;
-  max-width: 560px;
+  flex: 0 0 520px;                           /* 固定幅。縮小・折り返しをしない */
+  width: 520px;
   margin: 0;
   padding: 14px 20px 16px;
   display: flex;
