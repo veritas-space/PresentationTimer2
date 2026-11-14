@@ -1,6 +1,6 @@
 /* =========================================================
-   発表タイマー script.js
-   設計仕様書 Ver.2.2 準拠
+   発表タイマー script.js（統合パネル版）
+   設計仕様書 Ver.2.2 の動作仕様を踏襲
    ========================================================= */
 'use strict';
  
@@ -11,7 +11,7 @@ const COLOR_QA           = '#FEFF15';   // 質疑応答モード・通常 RGB(25
 const COLOR_DISCUSSION   = '#19D3FF';   // 内部討議・通常       RGB(25,211,255)
 const COLOR_OVERTIME     = '#F80201';   // 超過中（全モード共通）RGB(248,2,1)
  
-const BASE_PANEL_WIDTH = 1000;          // displayPanel のスケール1.0時の幅（style.css の 1000px と一致させること）
+const BASE_PANEL_WIDTH = 1400;          // 統合パネル integratedPanel のスケール1.0時の幅（style.css の 1400px と一致させること）
 const SCALE_MIN = 0.5;
 const SCALE_MAX = 3.0;
  
@@ -474,16 +474,73 @@ function applySettings() {
   resetFiredFlags();
  
   // 手順8: 表示更新
+  padTimeInputs();
   updateModeButton();
   renderAll();
 }
  
 /* =========================================================
-   5.6 手動リサイズ（対象は displayPanel とその内部のみ）
+   5.6 手動リサイズ（対象は統合パネル integratedPanel 全体）
    ========================================================= */
  
+// 統合パネル全体（表示・操作ボタン・言語バー・設定）を一括して拡大・縮小する
 function applyScale(scale) {
-  $('displayPanel').style.setProperty('--scale', scale);
+  $('integratedPanel').style.setProperty('--scale', scale);
+}
+
+// 初期表示：ウィンドウ幅に収まる倍率（最大1.0）
+function initialScale() {
+  const avail = (document.documentElement.clientWidth || window.innerWidth) - 48;
+  return Math.min(1.0, Math.max(SCALE_MIN, avail / BASE_PANEL_WIDTH));
+}
+
+// 時間入力欄に ▲▼ ボタンを付ける（キーボード入力とクリックの両方で設定できる）
+// 秒は 59 の次が 00、00 の前が 59 に回り込む。分は 0〜99 の範囲で止まる
+function initSpinButtons() {
+  const ICON_UP   = '<svg viewBox="0 0 10 6" aria-hidden="true"><path d="M5 0l5 6H0z"/></svg>';
+  const ICON_DOWN = '<svg viewBox="0 0 10 6" aria-hidden="true"><path d="M0 0h10L5 6z"/></svg>';
+  document.querySelectorAll('.time-field input[type="number"]').forEach((input) => {
+    const wrap = document.createElement('span');
+    wrap.className = 'spin-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    [['spin-up', ICON_UP, 1, '増やす'], ['spin-down', ICON_DOWN, -1, '減らす']].forEach(([cls, icon, dir, label]) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'spin-btn ' + cls;
+      btn.tabIndex = -1;
+      btn.setAttribute('aria-label', label);
+      btn.innerHTML = icon;
+      btn.addEventListener('mousedown', (e) => e.preventDefault());   // 入力欄のフォーカスを保つ
+      btn.addEventListener('click', () => stepTimeInput(input, dir));
+      wrap.appendChild(btn);
+    });
+  });
+}
+
+function stepTimeInput(input, dir) {
+  if (input.disabled) return;
+  const min = parseInt(input.min, 10) || 0;
+  const max = parseInt(input.max, 10);
+  let v = parseInt(input.value, 10);
+  if (Number.isNaN(v)) v = 0;
+  v += dir;
+  if (max === 59) {                       // 秒：回り込み
+    if (v > max) v = min;
+    if (v < min) v = max;
+  } else {                                // 分：範囲内で止める
+    v = Math.min(Math.max(v, min), max);
+  }
+  input.value = String(v);
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+// 時間入力欄（MM:SS）を常に2桁で表示する
+function padTimeInputs() {
+  document.querySelectorAll('.time-field input[type="number"]').forEach((el) => {
+    const v = el.value.trim();
+    if (/^\d$/.test(v)) el.value = '0' + v;
+  });
 }
  
 function onResizeMove(dx) {
@@ -545,9 +602,9 @@ function init() {
   resetFiredFlags();
  
   // 手順6: スケール初期化
-  uiState.scale = 1.0;
-  uiState.panelWidthPx = BASE_PANEL_WIDTH;
-  applyScale(1.0);
+  uiState.scale = initialScale();
+  uiState.panelWidthPx = BASE_PANEL_WIDTH * uiState.scale;
+  applyScale(uiState.scale);
  
   // 手順6b: 表示言語の初期化（languageSelector の初期選択値に合わせる）
   uiState.language = MODE_LABELS[$('langSelect').value] ? $('langSelect').value : DEFAULT_LANGUAGE;
@@ -564,7 +621,14 @@ function init() {
   // 入力欄からフォーカスが外れた時点でも、空欄を 0 にする
   $('settingsPanel').addEventListener('focusout', (e) => {
     if (e.target.matches('input[type="number"]') && e.target.value.trim() === '') e.target.value = '0';
+    padTimeInputs();
   });
+  // ▲▼クリックや入力確定（change）でも2桁表示に整える
+  $('settingsPanel').addEventListener('change', (e) => {
+    if (e.target.matches('.time-field input')) padTimeInputs();
+  });
+  padTimeInputs();
+  initSpinButtons();
   MODE_ORDER.forEach((m) => {
     $(MODE_PREFIX[m] + 'ModeEnabled').addEventListener('change', refreshModeBlocks);
   });
