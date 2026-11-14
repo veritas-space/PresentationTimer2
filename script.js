@@ -26,9 +26,9 @@ const BELL_SOUND_FILES = {
  
 // モード名の多言語対応（表示言語ごとの「発表」「質疑応答」に相当する文字列）
 const MODE_LABELS = {
-  ja: { presentation: '発表',        qa: '質疑応答', discussion: '内部討議' },
-  en: { presentation: 'Presentation', qa: 'Q&A',     discussion: 'Internal Discussion' },
-  zh: { presentation: '报告',        qa: '提问环节', discussion: '内部讨论' }
+  ja: { presentation: '発表',        qa: '質疑応答', discussion: '内部討議',            overtime: '超過時間' },
+  en: { presentation: 'Presentation', qa: 'Q&A',     discussion: 'Internal Discussion', overtime: 'Overtime' },
+  zh: { presentation: '报告',        qa: '提问环节', discussion: '内部讨论',            overtime: '超时' }
 };
 const DEFAULT_LANGUAGE = 'ja';
  
@@ -46,6 +46,7 @@ const state = {
   remainingSec: 600,
   overtime: false,
   overtimeSec: 0,
+  throughFinished: false, // スルーモードで有効な全モードが終了し、超過時間を計測中
   intervalId: null,
   firedFlags: { pre1: false, pre2: false, end: false }
 };
@@ -82,7 +83,8 @@ const uiState = {
   scale: 1.0,
   panelWidthPx: BASE_PANEL_WIDTH,
   language: DEFAULT_LANGUAGE,  // 'ja' | 'en' | 'zh'
-  showModeLabel: true          // モード名（キャプション）の表示 ON/OFF
+  showModeLabel: true,         // モード名（キャプション）の表示 ON/OFF
+  throughMode: false           // スルーモード ON/OFF
 };
  
 /* ---------- 内部作業用 ---------- */
@@ -113,6 +115,15 @@ function nextEnabledMode(currentMode) {
   return currentMode;
 }
  
+// スルーモード用：切替順で現在より後ろにある次の有効モード（なければ null。先頭へは戻らない）
+function nextEnabledModeInSequence(currentMode) {
+  const start = MODE_ORDER.indexOf(currentMode);
+  for (let i = start + 1; i < MODE_ORDER.length; i++) {
+    if (settings[MODE_ORDER[i]].enabled) return MODE_ORDER[i];
+  }
+  return null;
+}
+
 // 「モード」ボタンは、有効モードが2つ以上あるときだけ押せる
 function updateModeButton() {
   $('btnMode').disabled = enabledModes().length < 2;
@@ -152,7 +163,7 @@ function renderTime() {
  
 function renderModeLabel() {
   const labels = MODE_LABELS[uiState.language] || MODE_LABELS[DEFAULT_LANGUAGE];
-  $('modeLabel').textContent = labels[state.mode];
+  $('modeLabel').textContent = state.throughFinished ? labels.overtime : labels[state.mode];
 }
  
 /* =========================================================
@@ -245,6 +256,23 @@ function tick() {
     state.remainingSec -= 1;
     if (state.remainingSec <= 0) {
       state.remainingSec = 0;
+      if (uiState.throughMode) {
+        // スルーモード：0:00 で鳴動判定を行い、次の有効モードがあれば自動で開始する
+        checkPreBell(1);
+        checkPreBell(2);
+        checkEndBell();
+        const next = nextEnabledModeInSequence(state.mode);
+        if (next !== null) {
+          state.mode = next;
+          state.remainingSec = settings[next].totalSec;
+          state.overtime = false;
+          state.overtimeSec = 0;
+          resetFiredFlags();
+          renderAll();
+          return;                            // 計測は継続（running のまま）
+        }
+        state.throughFinished = true;        // 有効な全モードが終了 → 「超過時間」
+      }
       state.overtime = true;
       state.overtimeSec = 0;
     }
@@ -284,16 +312,22 @@ function stopTimer() {
 }
  
 // 9.3 モード
+// 通常時      ：計測を止めて、次の有効モードの設定時間に切り替える
+// スルーモード：計測中なら止めずに、次の有効モードの計測をそのまま始める
+//              （次のモードは通常と同じ順で、内部討議・超過時間の次は先頭の有効モードへ戻る）
 function toggleMode() {
   const next = nextEnabledMode(state.mode);
   if (next === state.mode) return;           // 有効モードが1つだけなら何もしない
+  const keepRunning = uiState.throughMode && state.running;
   stopTimer();
   state.mode = next;
   state.remainingSec = settings[state.mode].totalSec;
   state.overtime = false;
   state.overtimeSec = 0;
+  state.throughFinished = false;
   resetFiredFlags();
   renderAll();
+  if (keepRunning) startTimer();             // 1秒周期を切替時点から取り直して計測を継続
 }
  
 // 9.4 リセット
@@ -302,6 +336,7 @@ function resetTimer() {
   state.remainingSec = settings[state.mode].totalSec;
   state.overtime = false;
   state.overtimeSec = 0;
+  state.throughFinished = false;
   resetFiredFlags();
   renderAll();
 }
@@ -469,6 +504,7 @@ function applySettings() {
   state.remainingSec = settings[state.mode].totalSec;
   state.overtime = false;
   state.overtimeSec = 0;
+  state.throughFinished = false;
  
   // 手順7: 鳴動フラグ初期化
   resetFiredFlags();
@@ -627,6 +663,9 @@ function init() {
   $('btnApplySettings').addEventListener('click', applySettings);
   $('langSelect').addEventListener('change', onLanguageChange);
   $('captionShow').addEventListener('change', onCaptionToggle);
+  // スルーモードの ON/OFF（設定反映を押さなくても即時に有効）
+  $('throughMode').addEventListener('change', (e) => { uiState.throughMode = e.target.checked; });
+  uiState.throughMode = $('throughMode').checked;
   onCaptionToggle({ target: $('captionShow') });   // ブラウザが保持したチェック状態に合わせる
   // 入力欄からフォーカスが外れた時点でも、空欄を 0 にする
   $('settingsPanel').addEventListener('focusout', (e) => {

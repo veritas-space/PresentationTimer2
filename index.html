@@ -136,17 +136,18 @@ body {
 #languageSelector {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 18px 20px;
   background: #0B1220;
   border-top: 2px solid #1C2A44;
-  font-size: 26px;
+  font-size: 24px;
+  white-space: nowrap;                 /* 1行に収める */
   color: #C9D1DE;
 }
 #languageSelector .globe { width: 34px; height: 34px; color: #C9D1DE; }
 #languageSelector select {
   font-family: inherit;
-  font-size: 26px;
+  font-size: 24px;
   font-weight: bold;
   color: #FFFFFF;
   background: transparent;
@@ -157,9 +158,9 @@ body {
 }
 #languageSelector select:hover { border-color: #3A4C6E; }
 #languageSelector select option { color: #000; }
-#languageSelector .divider { color: #56627A; margin: 0 10px; }
-.caption-toggle { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; font-weight: bold; }
-.caption-toggle input { width: 30px; height: 30px; accent-color: #2C86F0; cursor: pointer; }
+#languageSelector .divider { color: #56627A; margin: 0 6px; }
+.caption-toggle { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold; }
+.caption-toggle input { width: 28px; height: 28px; accent-color: #2C86F0; cursor: pointer; }
 
 /* ---------- 右：設定エリア ---------- */
 
@@ -370,6 +371,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
       <label class="caption-toggle">
         <input type="checkbox" id="captionShow" checked><span>モード名を表示</span>
       </label>
+      <span class="divider">|</span>
+      <label class="caption-toggle" title="有効なモードが0:00になると次の有効なモードを自動で開始します">
+        <input type="checkbox" id="throughMode"><span>スルーモード</span>
+      </label>
     </div>
 
   </div><!-- /#mainArea -->
@@ -462,6 +467,6 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 </div><!-- /#integratedPanel -->
 </div><!-- /#panelFrame -->
 
-<script src="script.js?v=3.0"></script>
+<script src="script.js?v=4.0"></script>
 </body>
 </html>
