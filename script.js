@@ -12,7 +12,7 @@ const COLOR_DISCUSSION   = '#19D3FF';   // 内部討議・通常       RGB(25,21
 const COLOR_OVERTIME     = '#F80201';   // 超過中（全モード共通）RGB(248,2,1)
  
 const BASE_PANEL_WIDTH = 1400;          // 統合パネル integratedPanel のスケール1.0時の幅（style.css の 1400px と一致させること）
-const SCALE_MIN = 0.5;
+const SCALE_MIN = 0.2;
 const SCALE_MAX = 3.0;
  
 const MAX_TOTAL_SEC = 5999;             // 99分59秒
